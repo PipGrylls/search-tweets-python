@@ -99,7 +99,11 @@ def retry(func):
                     logger.error('Quitting... ')
                     raise requests.exceptions.HTTPError
 
-
+                state_function = kwargs.get('flask_celery_state_function', None)
+                if state_function is not None:
+                    state_function(state='RATE LIMIT',
+                                   meta={'tries': tries,
+                                         'sleep': sleep_seconds})
                 logger.error(f"Will retry in {sleep_seconds} seconds...")
                 time.sleep(sleep_seconds)
                 continue
@@ -112,7 +116,7 @@ def retry(func):
 
 
 @retry
-def request(session, url, request_parameters, **kwargs):
+def request(session, url, request_parameters, *, flask_celery_state_function, **kwargs):
     """
     Executes a request with the given payload and arguments.
     Args:
@@ -120,6 +124,8 @@ def request(session, url, request_parameters, **kwargs):
         url (str): Valid API endpoint
         request_parameters (str or dict): rule package for the POST. If you pass a
             dictionary, it will be converted into JSON.
+        flask_celery_state_function: function to update celery state to provide progress
+            updates to the runner used in the retry decorator
     """
 
     if isinstance(request_parameters, dict):
@@ -169,7 +175,7 @@ class ResultStream:
     session_request_counter = 0
 
     def __init__(self, endpoint, request_parameters, bearer_token=None, extra_headers_dict=None, max_tweets=500,
-                 max_requests=None, **kwargs):
+                 max_requests=None, state_function=None, **kwargs):
 
         self.bearer_token = bearer_token
         self.extra_headers_dict = extra_headers_dict
@@ -191,6 +197,7 @@ class ResultStream:
         self.max_requests = (max_requests if max_requests is not None
                              else 10 ** 9)
         self.endpoint = endpoint
+        self.flask_celery_state_function = state_function
 
     def stream(self):
         """
@@ -262,7 +269,8 @@ class ResultStream:
 
         resp = request(session=self.session,
                        url=self.endpoint,
-                       request_parameters=self.request_parameters)
+                       request_parameters=self.request_parameters,
+                       flask_celery_state_function=self.flask_celery_state_function)
         self.n_requests += 1
         ResultStream.session_request_counter += 1
         try:
@@ -272,7 +280,8 @@ class ResultStream:
             self.includes = resp.get("includes", None)
             self.meta = resp.get("meta", None)
             self.next_token = self.meta.get("next_token", None)
-
+            self.flask_celery_state_function(state='COLLECTING',
+                                             meta={'collected': len(self.current_tweets)})
         except:
             print("Error parsing content as JSON.")
 
