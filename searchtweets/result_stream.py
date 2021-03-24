@@ -101,8 +101,9 @@ def retry(func):
 
                 state_function = kwargs.get('flask_celery_state_function', None)
                 if state_function is not None:
-                    state_function(state='RATE LIMIT',
+                    state_function(state='RATE_LIMITING',
                                    meta={'tries': tries,
+                                         'sleep_start': time.time,
                                          'sleep': sleep_seconds})
                 logger.error(f"Will retry in {sleep_seconds} seconds...")
                 time.sleep(sleep_seconds)
