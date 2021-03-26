@@ -103,7 +103,7 @@ def retry(func):
                 if state_function is not None:
                     state_function(state='RATE_LIMITING',
                                    meta={'tries': tries,
-                                         'sleep_start': time.time,
+                                         'sleep_start': time.time(),
                                          'sleep': sleep_seconds})
                 logger.error(f"Will retry in {sleep_seconds} seconds...")
                 time.sleep(sleep_seconds)
