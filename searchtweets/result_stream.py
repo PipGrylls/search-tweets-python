@@ -185,8 +185,7 @@ class ResultStream:
         self.request_parameters = request_parameters
         # magic number of max tweets if you pass a non_int
         self.max_tweets = (max_tweets if isinstance(max_tweets, int)
-                           else 10)
-
+                           else 10)  # Change made to prevent the fail state maxing out the API
         self.total_results = 0
         self.n_requests = 0
         self.session = None
@@ -196,7 +195,7 @@ class ResultStream:
         self._tweet_func = lambda x: x
         # magic number of requests!
         self.max_requests = (max_requests if max_requests is not None
-                             else 10 ** 9)
+                             else 100)  # Change made to prevent the fail state maxing out the API
         self.endpoint = endpoint
         self.flask_celery_state_function = state_function
 
