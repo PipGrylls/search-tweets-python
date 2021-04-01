@@ -185,7 +185,7 @@ class ResultStream:
         self.request_parameters = request_parameters
         # magic number of max tweets if you pass a non_int
         self.max_tweets = (max_tweets if isinstance(max_tweets, int)
-                           else 10 ** 15)
+                           else 10)
 
         self.total_results = 0
         self.n_requests = 0
